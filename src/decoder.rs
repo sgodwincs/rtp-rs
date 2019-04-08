@@ -2,7 +2,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use std::convert::TryFrom;
 use std::error::Error;
 
-use crate::header::Header;
+use crate::header::{Header, CSRC, SSRC};
 use crate::version::Version;
 
 pub fn decode<TBuffer>(buffer: TBuffer) -> Result<Header, Box<Error>>
@@ -20,11 +20,11 @@ where
     let payload_type = byte >> 1;
     let sequence_number = buffer.read_u16::<BigEndian>()?;
     let timestamp = buffer.read_u32::<BigEndian>()?;
-    let ssrc = buffer.read_u32::<BigEndian>()?;
+    let ssrc = SSRC(buffer.read_u32::<BigEndian>()?);
     let mut csrcs = Vec::with_capacity(csrc_count as usize);
 
     for _ in 0..csrc_count {
-        csrcs.push(buffer.read_u32::<BigEndian>()?);
+        csrcs.push(CSRC(buffer.read_u32::<BigEndian>()?));
     }
 
     Ok(Header {
