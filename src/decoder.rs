@@ -70,6 +70,7 @@ impl Display for DecodeError {
 
         match self {
             Version(error) => error.fmt(formatter),
+            UnexpectedEOF => write!(formatter, "unexpected EOF"),
             UnsupportedVersion => write!(formatter, "unsupported version"),
         }
     }
