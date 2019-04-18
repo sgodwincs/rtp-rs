@@ -4,8 +4,32 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io::Read;
 
-use crate::header::{Extension, Header, CSRC, SSRC};
 use crate::version::{Version, VersionError};
+
+#[derive(Debug)]
+pub struct Header {
+    csrcs: Vec<CSRC>,
+    extension: Option<Extension>,
+    has_marker: bool,
+    has_padding: bool,
+    payload_type: u8,
+    sequence_number: u16,
+    ssrc: SSRC,
+    timestamp: u32,
+    version: Version,
+}
+
+#[derive(Debug)]
+pub struct SSRC(pub(crate) u32);
+
+#[derive(Debug)]
+pub struct CSRC(pub(crate) u32);
+
+#[derive(Debug)]
+pub struct Extension {
+    body: Vec<u8>,
+    parameters: u16,
+}
 
 pub fn decode<TBuffer>(buffer: TBuffer) -> Result<Header, DecodeError>
 where
