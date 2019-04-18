@@ -2,8 +2,9 @@ use byteorder::{BigEndian, ReadBytesExt};
 use std::convert::{Infallible, TryFrom};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
+use std::io::Read;
 
-use crate::header::{Header, CSRC, SSRC};
+use crate::header::{Extension, Header, CSRC, SSRC};
 use crate::version::{Version, VersionError};
 
 pub fn decode<TBuffer>(buffer: TBuffer) -> Result<Header, DecodeError>
@@ -43,9 +44,29 @@ where
         csrcs.push(CSRC(csrc));
     }
 
+    let extension = if has_extension {
+        let parameters = buffer
+            .read_u16::<BigEndian>()
+            .map_err(|_| DecodeError::UnexpectedEOF)?;
+
+        // The length defined in the header is the number of 32-bit words in the extension, so
+        // multiply by 4 to get the number of bytes.
+        let length = buffer
+            .read_u16::<BigEndian>()
+            .map_err(|_| DecodeError::UnexpectedEOF)?;
+        let length = 4 * (length as usize);
+        let mut body = Vec::with_capacity(length);
+        buffer
+            .read_exact(&mut body)
+            .map_err(|_| DecodeError::UnexpectedEOF)?;
+        Some(Extension { body, parameters })
+    } else {
+        None
+    };
+
     Ok(Header {
         csrcs,
-        has_extension,
+        extension,
         has_marker,
         has_padding,
         payload_type,
