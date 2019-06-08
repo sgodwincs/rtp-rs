@@ -19,11 +19,11 @@ pub struct Header {
     version: Version,
 }
 
-#[derive(Debug)]
-pub struct SSRC(pub(crate) u32);
+#[derive(Clone, Copy, Debug)]
+pub struct SSRC(u32);
 
-#[derive(Debug)]
-pub struct CSRC(pub(crate) u32);
+#[derive(Clone, Copy, Debug)]
+pub struct CSRC(u32);
 
 #[derive(Debug)]
 pub struct Extension {
@@ -38,10 +38,12 @@ where
     let mut buffer = buffer.as_ref();
 
     let byte = buffer.read_u8().map_err(|_| DecodeError::UnexpectedEOF)?;
-    let version = match Version::try_from(byte & 0x3)? {
-        Version::RTP2 => Version::RTP2,
-        _ => return Err(DecodeError::UnsupportedVersion),
-    };
+    let version = Version::try_from(byte & 0x3)?;
+
+    if !version.is_rtp2() {
+        return Err(DecodeError::UnsupportedVersion);
+    }
+
     let has_padding = byte & 0x4 > 0;
     let has_extension = byte & 0x8 > 0;
     let csrc_count = byte >> 4;
